@@ -89,7 +89,7 @@ export default function AuthPage() {
     setGLoading(true);
     try {
       const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: "940547916068-0r2art3sdr1lajulqr8rmma3vljklr92.apps.googleusercontent.com",
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "940547916068-0r2art3sdr1lajulqr8rmma3vljklr92.apps.googleusercontent.com",
         scope: "email profile",
         callback: async (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
