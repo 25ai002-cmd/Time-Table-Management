@@ -569,7 +569,7 @@ export default function App() {
         <div className="page-content" style={{ padding: "24px 28px", animation: "fadeIn 0.2s ease" }}>
           {page === "dashboard" && <Dashboard standards={standards} subjects={subjects} teachers={teachers} rooms={rooms} totalPeriods={totalPeriods} generatedTT={generatedTT} setPage={setPage} handleGenerate={handleGenerate} institute={institute} progressPct={progressPct} />}
           {page === "institute" && <InstituteSetup institute={institute} setInstitute={setInstitute} showToast={showToast} />}
-          {page === "standards" && <StandardsSetup standards={standards} setStandards={setStandards} teachers={teachers} showToast={showToast} institute={institute} />}
+          {page === "standards" && <StandardsSetup standards={standards} setStandards={setStandards} teachers={teachers} subjects={subjects} showToast={showToast} institute={institute} />}
           {page === "subjects" && <SubjectsSetup subjects={subjects} setSubjects={setSubjects} standards={standards} showToast={showToast} />}
           {page === "teachers" && <TeachersSetup teachers={teachers} setTeachers={setTeachers} subjects={subjects} standards={standards} showToast={showToast} generatedTT={generatedTT} setGeneratedTT={setGeneratedTT} />}
           {page === "rooms" && <RoomsSetup rooms={rooms} setRooms={setRooms} showToast={showToast} />}
@@ -939,7 +939,7 @@ const getStandardOptions = (type) => {
   }
 };
 
-function StandardsSetup({ standards, setStandards, teachers, showToast, institute }) {
+function StandardsSetup({ standards, setStandards, teachers, subjects, showToast, institute }) {
   const allOptions = getStandardOptions(institute?.type || "School");
   const addedNames = standards.map(s => s.name.toLowerCase());
   const remaining = allOptions.filter(o => !addedNames.includes(o.toLowerCase()));
@@ -1230,6 +1230,19 @@ function StandardsSetup({ standards, setStandards, teachers, showToast, institut
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {curStd?.sections.map(sec => {
+                  const classTeacher = teachers.find(t => t.id === sec.classTeacherId);
+                  const ctSubjects = classTeacher ? subjects.filter(sub => {
+                    if (sub.standardId !== curStd.id) return false;
+                    if (classTeacher.assignments?.length) {
+                      return classTeacher.assignments.some(a =>
+                        a.standardId === curStd.id &&
+                        a.subjectIds?.includes(sub.id) &&
+                        (a.sectionIds?.length === 0 || !a.sectionIds || a.sectionIds.includes(sec.id))
+                      );
+                    }
+                    return classTeacher.subjects?.includes(sub.id) || false;
+                  }) : [];
+
                   return (
                     <div key={sec.id} style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
@@ -1263,7 +1276,7 @@ function StandardsSetup({ standards, setStandards, teachers, showToast, institut
                               const teacherId = e.target.value || null;
                               setStandards(p => p.map(s => s.id === curStd.id ? {
                                 ...s,
-                                sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherId: teacherId } : se)
+                                sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherId: teacherId, classTeacherSubjectId: null } : se)
                               } : s));
                               showToast("Class teacher updated");
                             }}
@@ -1276,6 +1289,39 @@ function StandardsSetup({ standards, setStandards, teachers, showToast, institut
                             {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                           </select>
                         </div>
+
+                        {/* Class Teacher Subject Select */}
+                        {sec.classTeacherId && ctSubjects.length > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>CT Subject:</span>
+                            <select
+                              value={sec.classTeacherSubjectId || ""}
+                              onChange={e => {
+                                const val = e.target.value || null;
+                                setStandards(p => p.map(s => s.id === curStd.id ? {
+                                  ...s,
+                                  sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherSubjectId: val } : se)
+                                } : s));
+                                showToast("Class teacher subject updated");
+                              }}
+                              style={{
+                                padding: "6px 10px", borderRadius: 8, border: `1.5px solid ${C.gray200}`,
+                                fontSize: 12, outline: "none", background: C.white, fontFamily: "inherit"
+                              }}
+                            >
+                              <option value="">— Any Subject —</option>
+                              {ctSubjects.map(sub => (
+                                <option key={sub.id} value={sub.id}>{sub.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {sec.classTeacherId && ctSubjects.length === 0 && (
+                          <span style={{ fontSize: 11, color: C.warning, fontWeight: 600 }} title="This teacher is not assigned to teach any subjects in this class. Set assignments in Teachers setup first.">
+                            ⚠️ No subjects assigned
+                          </span>
+                        )}
 
                         {/* CT Period Mon-Sat */}
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

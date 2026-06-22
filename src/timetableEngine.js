@@ -122,6 +122,7 @@ export function generateTimetable(institute, standards, subjects, teachers, room
 
             // Find a subject slot for the class teacher
             const slotIndex = slots.findIndex(sub => {
+              if (sec.classTeacherSubjectId && sub.id !== sec.classTeacherSubjectId) return false;
               if (!teacherCanTeach(classTeacher, sub.id, std.id, sec.id)) return false;
               if (teacherSchedule[classTeacher.id][d][targetPeriodNum]) return false;
               const dailyCount = Object.values(teacherSchedule[classTeacher.id][d]).filter(Boolean).length;

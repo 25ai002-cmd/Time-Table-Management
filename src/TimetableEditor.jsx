@@ -83,6 +83,9 @@ export default function TimetableEditor({
     dragRef.current = { classKey: ck, day, periodNum };
     setDragSrc({ classKey: ck, day, periodNum });
     e.dataTransfer.effectAllowed = "move";
+    try {
+      e.dataTransfer.setData("text/plain", "");
+    } catch (err) {}
   };
   const handleDragOver = (e, ck, day, periodNum) => {
     e.preventDefault();
@@ -90,7 +93,13 @@ export default function TimetableEditor({
     setDragOver({ classKey: ck, day, periodNum });
   };
   const handleDragLeave = () => setDragOver(null);
-  const handleDragEnd = () => { setDragSrc(null); setDragOver(null); dragRef.current = null; };
+  const handleDragEnd = () => {
+    setDragSrc(null);
+    setDragOver(null);
+    setTimeout(() => {
+      dragRef.current = null;
+    }, 100);
+  };
 
   const handleDrop = (e, tgtKey, tgtDay, tgtPeriod) => {
     e.preventDefault();
