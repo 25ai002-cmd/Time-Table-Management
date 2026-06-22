@@ -12,6 +12,9 @@ export function generateId() {
 
 // Compute all time slots (periods + breaks) for a day
 export function computePeriods(institute) {
+  const hasShortBreak = institute?.hasShortBreak !== false;
+  const hasLunchBreak = institute?.hasLunchBreak !== false;
+
   if (institute?.customPeriods && institute.customPeriods.length > 0) {
     const periods = [];
     const sortedCustom = [...institute.customPeriods].sort((a,b) => a.num - b.num);
@@ -27,8 +30,11 @@ export function computePeriods(institute) {
         
         if (curStartMin > prevEndMin) {
           const gap = curStartMin - prevEndMin;
-          const label = gap >= 35 ? "Lunch Break" : "Short Break";
-          periods.push({ type: "break", label, start: prev.end, end: cp.start });
+          const label = (gap >= 35 && hasLunchBreak) ? "Lunch Break" : "Short Break";
+          const isBreakEnabled = label === "Lunch Break" ? hasLunchBreak : hasShortBreak;
+          if (isBreakEnabled) {
+            periods.push({ type: "break", label, start: prev.end, end: cp.start });
+          }
         }
       }
       
@@ -53,12 +59,12 @@ export function computePeriods(institute) {
     const endStr = toTime(end);
     const breakMin = (institute?.breakStart || "10:30").split(":").map(Number).reduce((a,b)=>a*60+b);
     const lunchMin = (institute?.lunchStart || "13:00").split(":").map(Number).reduce((a,b)=>a*60+b);
-    if (current === breakMin) {
+    if (hasShortBreak && current === breakMin) {
       periods.push({ type:"break", label:"Short Break", start:startStr, end:institute.breakEnd || "10:45" });
       current = (institute.breakEnd || "10:45").split(":").map(Number).reduce((a,b)=>a*60+b);
       i--; continue;
     }
-    if (current === lunchMin) {
+    if (hasLunchBreak && current === lunchMin) {
       periods.push({ type:"break", label:"Lunch Break", start:startStr, end:institute.lunchEnd || "13:45" });
       current = (institute.lunchEnd || "13:45").split(":").map(Number).reduce((a,b)=>a*60+b);
       i--; continue;

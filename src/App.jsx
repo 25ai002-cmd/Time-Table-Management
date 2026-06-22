@@ -941,19 +941,37 @@ function InstituteSetup({ institute, setInstitute, showToast }) {
           <FormRow label="School Start Time">
             <input type="time" value={institute.startTime} onChange={e => upd("startTime", e.target.value)} style={inputStyle} />
           </FormRow>
-          <FormRow label="Short Break">
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input type="time" value={institute.breakStart} onChange={e => upd("breakStart", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-              <span style={{ color: C.gray400, fontSize: 12 }}>to</span>
-              <input type="time" value={institute.breakEnd} onChange={e => upd("breakEnd", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+          <FormRow label={
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span>Short Break</span>
+              <input type="checkbox" checked={institute.hasShortBreak !== false} onChange={e => upd("hasShortBreak", e.target.checked)} />
             </div>
+          }>
+            {institute.hasShortBreak !== false ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input type="time" value={institute.breakStart} onChange={e => upd("breakStart", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                <span style={{ color: C.gray400, fontSize: 12 }}>to</span>
+                <input type="time" value={institute.breakEnd} onChange={e => upd("breakEnd", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: C.gray400, fontStyle: "italic", height: 38, display: "flex", alignItems: "center" }}>Disabled</div>
+            )}
           </FormRow>
-          <FormRow label="Lunch Break">
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input type="time" value={institute.lunchStart} onChange={e => upd("lunchStart", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-              <span style={{ color: C.gray400, fontSize: 12 }}>to</span>
-              <input type="time" value={institute.lunchEnd} onChange={e => upd("lunchEnd", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+          <FormRow label={
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span>Lunch Break</span>
+              <input type="checkbox" checked={institute.hasLunchBreak !== false} onChange={e => upd("hasLunchBreak", e.target.checked)} />
             </div>
+          }>
+            {institute.hasLunchBreak !== false ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input type="time" value={institute.lunchStart} onChange={e => upd("lunchStart", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                <span style={{ color: C.gray400, fontSize: 12 }}>to</span>
+                <input type="time" value={institute.lunchEnd} onChange={e => upd("lunchEnd", e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: C.gray400, fontStyle: "italic", height: 38, display: "flex", alignItems: "center" }}>Disabled</div>
+            )}
           </FormRow>
         </div>
         <div style={{ marginTop: 16, padding: "10px 14px", background: C.successLight, border: `1px solid #bbf7d0`, borderRadius: 8, fontSize: 12, color: "#065f46", display: "flex", alignItems: "center", gap: 8 }}>
