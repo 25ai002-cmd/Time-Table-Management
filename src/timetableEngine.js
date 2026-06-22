@@ -105,35 +105,137 @@ export function generateTimetable(institute, standards, subjects, teachers, room
       });
       slots.sort(() => Math.random() - 0.5);
 
-      let slotIdx = 0;
+      // ── Pre-schedule Class Teacher's Periods ──
+      if (sec.classTeacherId) {
+        const classTeacher = teachers.find(t => t.id === sec.classTeacherId);
+        if (classTeacher) {
+          days.forEach(d => {
+            // Resolve the target period number
+            const targetPeriodNum = d === "Friday"
+              ? (sec.classTeacherPeriodFriday !== undefined && sec.classTeacherPeriodFriday !== null ? sec.classTeacherPeriodFriday : 2)
+              : (sec.classTeacherPeriodNormal !== undefined && sec.classTeacherPeriodNormal !== null ? sec.classTeacherPeriodNormal : 1);
+
+            if (targetPeriodNum === "none" || targetPeriodNum === null) return;
+
+            const targetPeriod = periods.find(p => p.num === targetPeriodNum);
+            if (!targetPeriod) return;
+
+            // Find a subject slot for the class teacher
+            const slotIndex = slots.findIndex(sub => {
+              if (!teacherCanTeach(classTeacher, sub.id, std.id, sec.id)) return false;
+              if (teacherSchedule[classTeacher.id][d][targetPeriodNum]) return false;
+              const dailyCount = Object.values(teacherSchedule[classTeacher.id][d]).filter(Boolean).length;
+              if (classTeacher.dailyLimit && dailyCount >= parseInt(classTeacher.dailyLimit)) return false;
+              return true;
+            });
+
+            if (slotIndex !== -1) {
+              const sub = slots[slotIndex];
+              const eligibleRooms = rooms.filter(r =>
+                (!sub.roomType || r.type === sub.roomType) && !roomSchedule[r.id][d][targetPeriodNum]
+              );
+              const room = eligibleRooms[0] || null;
+
+              // Assign
+              timetable[key][d][targetPeriodNum] = { subject: sub, teacher: classTeacher, room };
+              teacherSchedule[classTeacher.id][d][targetPeriodNum] = { subject: sub, class: std, section: sec };
+              if (room) roomSchedule[room.id][d][targetPeriodNum] = { subject: sub, class: std, section: sec };
+
+              // Remove from slots queue
+              slots.splice(slotIndex, 1);
+            }
+          });
+        }
+      }
+
       const order = [];
       days.forEach(d => periods.forEach(p => order.push({ d, p })));
       order.sort(() => Math.random() - 0.5);
 
+      // Helper to count periods of a subject on a day
+      const getSubjectDailyCount = (day, subjectId) => {
+        return Object.values(timetable[key][day] || {}).filter(cell => cell && cell.subject?.id === subjectId).length;
+      };
+
       order.forEach(({ d, p }) => {
-        if (slotIdx >= slots.length) return;
-        const sub = slots[slotIdx];
+        // Skip if this slot was already pre-scheduled (e.g. by Class Teacher)
+        if (timetable[key][d][p.num]) return;
 
-        // Find eligible teachers using new assignment model
-        const eligible = teachers.filter(t => {
-          if (!teacherCanTeach(t, sub.id, std.id, sec.id)) return false;
-          if (teacherSchedule[t.id][d][p.num]) return false;
-          const dailyCount = Object.values(teacherSchedule[t.id][d]).filter(Boolean).length;
-          if (t.dailyLimit && dailyCount >= parseInt(t.dailyLimit)) return false;
-          return true;
-        });
+        if (!slots.length) return;
 
-        if (!eligible.length) return;
-        const teacher = eligible[Math.floor(Math.random() * eligible.length)];
-        const eligibleRooms = rooms.filter(r =>
-          (!sub.roomType || r.type === sub.roomType) && !roomSchedule[r.id][d][p.num]
-        );
-        const room = eligibleRooms[0] || null;
+        // Try to find a subject that satisfies the distribution rule
+        let chosenIdx = -1;
+        let chosenTeacher = null;
+        let chosenRoom = null;
 
-        timetable[key][d][p.num] = { subject: sub, teacher, room };
-        teacherSchedule[teacher.id][d][p.num] = { subject: sub, class: std, section: sec };
-        if (room) roomSchedule[room.id][d][p.num] = { subject: sub, class: std, section: sec };
-        slotIdx++;
+        for (let i = 0; i < slots.length; i++) {
+          const sub = slots[i];
+          const weeklyCount = parseInt(sub.periodsPerWeek) || 0;
+          const dailyCount = getSubjectDailyCount(d, sub.id);
+
+          // Rule check: if <= working days, no doubling. If > working days, at most 2 per day.
+          if (weeklyCount <= days.length && dailyCount >= 1) continue;
+          if (weeklyCount > days.length && dailyCount >= 2) continue;
+
+          // Teacher check
+          const eligible = teachers.filter(t => {
+            if (!teacherCanTeach(t, sub.id, std.id, sec.id)) return false;
+            if (teacherSchedule[t.id][d][p.num]) return false;
+            const dailyCountTeacher = Object.values(teacherSchedule[t.id][d]).filter(Boolean).length;
+            if (t.dailyLimit && dailyCountTeacher >= parseInt(t.dailyLimit)) return false;
+            return true;
+          });
+
+          if (!eligible.length) continue;
+
+          // Room check
+          const eligibleRooms = rooms.filter(r =>
+            (!sub.roomType || r.type === sub.roomType) && !roomSchedule[r.id][d][p.num]
+          );
+          if (!eligibleRooms.length && sub.roomType) continue;
+
+          chosenIdx = i;
+          chosenTeacher = eligible[Math.floor(Math.random() * eligible.length)];
+          chosenRoom = eligibleRooms[0] || null;
+          break;
+        }
+
+        // Fallback: If no subject fits the strict distribution rule, pick first that can be scheduled at all
+        if (chosenIdx === -1) {
+          for (let i = 0; i < slots.length; i++) {
+            const sub = slots[i];
+            const eligible = teachers.filter(t => {
+              if (!teacherCanTeach(t, sub.id, std.id, sec.id)) return false;
+              if (teacherSchedule[t.id][d][p.num]) return false;
+              const dailyCountTeacher = Object.values(teacherSchedule[t.id][d]).filter(Boolean).length;
+              if (t.dailyLimit && dailyCountTeacher >= parseInt(t.dailyLimit)) return false;
+              return true;
+            });
+
+            if (!eligible.length) continue;
+
+            const eligibleRooms = rooms.filter(r =>
+              (!sub.roomType || r.type === sub.roomType) && !roomSchedule[r.id][d][p.num]
+            );
+            if (!eligibleRooms.length && sub.roomType) continue;
+
+            chosenIdx = i;
+            chosenTeacher = eligible[Math.floor(Math.random() * eligible.length)];
+            chosenRoom = eligibleRooms[0] || null;
+            break;
+          }
+        }
+
+        // If we found a slot, assign it
+        if (chosenIdx !== -1) {
+          const sub = slots[chosenIdx];
+          timetable[key][d][p.num] = { subject: sub, teacher: chosenTeacher, room: chosenRoom };
+          teacherSchedule[chosenTeacher.id][d][p.num] = { subject: sub, class: std, section: sec };
+          if (chosenRoom) roomSchedule[chosenRoom.id][d][p.num] = { subject: sub, class: std, section: sec };
+
+          // Remove the scheduled slot
+          slots.splice(chosenIdx, 1);
+        }
       });
     });
   });

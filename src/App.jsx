@@ -219,6 +219,7 @@ export default function App() {
   const [aiOpen, setAiOpen] = useState(false);
   const [excelWizardOpen, setExcelWizardOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [dataLoading, setDataLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -338,16 +339,29 @@ export default function App() {
   const progressPct = Math.round((setupProgress.filter(s => s.done).length / setupProgress.length) * 100);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Inter', sans-serif" }}>
+    <div className="app-container" style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Inter', sans-serif" }}>
+      {mobileSidebarOpen && (
+        <div
+          className="mobile-backdrop"
+          onClick={() => setMobileSidebarOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 95,
+            animation: "fadeIn 0.2s ease",
+          }}
+        />
+      )}
 
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
-      <aside style={{
+      <aside className={`sidebar-aside ${mobileSidebarOpen ? "open" : ""}`} style={{
         width: sidebarCollapsed ? 64 : 240,
         background: C.sidebarBg,
         display: "flex", flexDirection: "column",
         position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 100,
         overflowY: "auto", overflowX: "hidden",
-        transition: "width 0.25s cubic-bezier(0.4,0,0.2,1)",
+        transition: "width 0.25s cubic-bezier(0.4,0,0.2,1), left 0.25s cubic-bezier(0.4,0,0.2,1)",
         boxShadow: "4px 0 24px rgba(0,0,0,0.2)",
       }}>
         {/* Logo */}
@@ -401,7 +415,7 @@ export default function App() {
               {group.items.map(item => {
                 const isActive = page === item.id;
                 return (
-                  <button key={item.id} onClick={() => setPage(item.id)}
+                  <button key={item.id} onClick={() => { setPage(item.id); setMobileSidebarOpen(false); }}
                     title={sidebarCollapsed ? item.label : undefined}
                     style={{
                       display: "flex", alignItems: "center",
@@ -469,10 +483,10 @@ export default function App() {
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
-      <main style={{ marginLeft: sidebarCollapsed ? 64 : 240, flex: 1, overflowY: "auto", transition: "margin-left 0.25s cubic-bezier(0.4,0,0.2,1)", minHeight: "100vh" }}>
+      <main className="main-content" style={{ marginLeft: sidebarCollapsed ? 64 : 240, flex: 1, overflowY: "auto", transition: "margin-left 0.25s cubic-bezier(0.4,0,0.2,1)", minHeight: "100vh" }}>
 
         {/* Header */}
-        <header style={{
+        <header className="app-header" style={{
           background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)",
           borderBottom: `1px solid ${C.gray200}`,
           padding: "0 28px", height: 60,
@@ -480,20 +494,39 @@ export default function App() {
           position: "sticky", top: 0, zIndex: 50,
           boxShadow: "0 1px 12px rgba(0,0,0,0.05)",
         }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: C.gray900 }}>{currentPageLabel}</div>
-            <div style={{ fontSize: 11, color: C.gray400, marginTop: 1 }}>
-              {institute.name} · {institute.academicYear}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button 
+              className="mobile-toggle-btn"
+              onClick={() => setMobileSidebarOpen(true)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: C.gray800,
+                fontSize: 20,
+                display: "none",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 4,
+              }}
+            >
+              <i className="ti ti-menu-2" />
+            </button>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: C.gray900 }}>{currentPageLabel}</div>
+              <div className="header-sub" style={{ fontSize: 11, color: C.gray400, marginTop: 1 }}>
+                {institute.name} · {institute.academicYear}
+              </div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* Save indicator */}
-            <div style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4, color: saveError ? C.danger : saving ? C.gray400 : C.success, padding: "4px 10px", borderRadius: 20, background: saveError ? C.dangerLight : saving ? C.gray100 : C.successLight }}>
-              {saving && <><i className="ti ti-loader-2" style={{ fontSize: 12, animation: "spin 1s linear infinite" }} /> Saving…</>}
-              {!saving && !saveError && <><i className="ti ti-cloud-check" style={{ fontSize: 12 }} /> Saved</>}
-              {saveError && <><i className="ti ti-cloud-x" style={{ fontSize: 12 }} /> Save failed</>}
+            <div className="save-indicator" style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4, color: saveError ? C.danger : saving ? C.gray400 : C.success, padding: "4px 10px", borderRadius: 20, background: saveError ? C.dangerLight : saving ? C.gray100 : C.successLight }}>
+              {saving && <><i className="ti ti-loader-2" style={{ fontSize: 12, animation: "spin 1s linear infinite" }} /> <span className="save-text">Saving…</span></>}
+              {!saving && !saveError && <><i className="ti ti-cloud-check" style={{ fontSize: 12 }} /> <span className="save-text">Saved</span></>}
+              {saveError && <><i className="ti ti-cloud-x" style={{ fontSize: 12 }} /> <span className="save-text">Save failed</span></>}
             </div>
-            <button onClick={() => setExcelWizardOpen(true)}
+            <button className="header-btn secondary-btn" onClick={() => setExcelWizardOpen(true)}
               style={{
                 background: "#eff6ff",
                 color: C.accent,
@@ -505,9 +538,9 @@ export default function App() {
               onMouseEnter={e => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.background = "#dbeafe"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = C.gray200; e.currentTarget.style.background = "#eff6ff"; }}>
               <i className="ti ti-file-spreadsheet" style={{ fontSize: 15 }} />
-              Import from Excel
+              <span className="btn-text">Import from Excel</span>
             </button>
-            <button onClick={() => setAiOpen(v => !v)}
+            <button className="header-btn ai-btn" onClick={() => setAiOpen(v => !v)}
               style={{
                 background: aiOpen ? "linear-gradient(135deg, #7c3aed, #6d28d9)" : "#ede9fe",
                 color: aiOpen ? "#fff" : "#7c3aed",
@@ -517,9 +550,9 @@ export default function App() {
                 boxShadow: aiOpen ? "0 2px 10px rgba(124,58,237,0.35)" : "none",
               }}>
               <i className="ti ti-robot" style={{ fontSize: 15 }} />
-              AI Assistant
+              <span className="btn-text">AI Assistant</span>
             </button>
-            <button onClick={handleGenerate}
+            <button className="header-btn primary-btn" onClick={handleGenerate}
               style={{
                 background: `linear-gradient(135deg, ${C.accent}, #1d4ed8)`,
                 color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px",
@@ -528,15 +561,15 @@ export default function App() {
                 boxShadow: `0 2px 12px ${C.accentGlow}`,
               }}>
               <i className="ti ti-wand" style={{ fontSize: 15 }} />
-              Generate Timetable
+              <span className="btn-text">Generate Timetable</span>
             </button>
           </div>
         </header>
 
-        <div style={{ padding: "24px 28px", animation: "fadeIn 0.2s ease" }}>
+        <div className="page-content" style={{ padding: "24px 28px", animation: "fadeIn 0.2s ease" }}>
           {page === "dashboard" && <Dashboard standards={standards} subjects={subjects} teachers={teachers} rooms={rooms} totalPeriods={totalPeriods} generatedTT={generatedTT} setPage={setPage} handleGenerate={handleGenerate} institute={institute} progressPct={progressPct} />}
           {page === "institute" && <InstituteSetup institute={institute} setInstitute={setInstitute} showToast={showToast} />}
-          {page === "standards" && <StandardsSetup standards={standards} setStandards={setStandards} showToast={showToast} institute={institute} />}
+          {page === "standards" && <StandardsSetup standards={standards} setStandards={setStandards} teachers={teachers} showToast={showToast} institute={institute} />}
           {page === "subjects" && <SubjectsSetup subjects={subjects} setSubjects={setSubjects} standards={standards} showToast={showToast} />}
           {page === "teachers" && <TeachersSetup teachers={teachers} setTeachers={setTeachers} subjects={subjects} standards={standards} showToast={showToast} generatedTT={generatedTT} setGeneratedTT={setGeneratedTT} />}
           {page === "rooms" && <RoomsSetup rooms={rooms} setRooms={setRooms} showToast={showToast} />}
@@ -629,9 +662,9 @@ function Dashboard({ standards, subjects, teachers, rooms, totalPeriods, generat
   const nextStep = steps.find(s => !s.done);
 
   return (
-    <div style={{ maxWidth: 1100 }}>
+    <div className="dashboard-container" style={{ maxWidth: 1100 }}>
       {/* Hero Banner */}
-      <div style={{
+      <div className="dashboard-hero" style={{
         background: `linear-gradient(135deg, ${C.primary} 0%, ${C.accent} 100%)`,
         borderRadius: 18, padding: "28px 32px", marginBottom: 24,
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -642,7 +675,7 @@ function Dashboard({ standards, subjects, teachers, rooms, totalPeriods, generat
         <div style={{ position: "absolute", right: -40, top: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", right: 60, bottom: -60, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.03)", pointerEvents: "none" }} />
 
-        <div style={{ zIndex: 1 }}>
+        <div className="hero-text" style={{ zIndex: 1 }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 6 }}>
             Welcome back, {institute.name}! 🎓
           </div>
@@ -658,7 +691,7 @@ function Dashboard({ standards, subjects, teachers, rooms, totalPeriods, generat
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, zIndex: 1, flexShrink: 0 }}>
+        <div className="dashboard-hero-actions" style={{ display: "flex", gap: 10, zIndex: 1, flexShrink: 0 }}>
           {nextStep && nextStep.page && (
             <button onClick={() => setPage(nextStep.page)} style={{
               background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)",
@@ -685,7 +718,7 @@ function Dashboard({ standards, subjects, teachers, rooms, totalPeriods, generat
       </div>
 
       {/* Stats Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 14, marginBottom: 24 }}>
+      <div className="dashboard-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 14, marginBottom: 24 }}>
         {stats.map(s => (
           <div key={s.label} style={{
             background: C.white, border: `1px solid ${C.gray200}`, borderRadius: 14,
@@ -706,7 +739,7 @@ function Dashboard({ standards, subjects, teachers, rooms, totalPeriods, generat
       </div>
 
       {/* Setup Steps & Quick Actions */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
+      <div className="dashboard-main-grid" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
         {/* Setup Progress Cards */}
         <Card title="Setup Checklist" icon="ti-circle-check" subtitle="Complete these steps to generate your timetable">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -906,7 +939,7 @@ const getStandardOptions = (type) => {
   }
 };
 
-function StandardsSetup({ standards, setStandards, showToast, institute }) {
+function StandardsSetup({ standards, setStandards, teachers, showToast, institute }) {
   const allOptions = getStandardOptions(institute?.type || "School");
   const addedNames = standards.map(s => s.name.toLowerCase());
   const remaining = allOptions.filter(o => !addedNames.includes(o.toLowerCase()));
@@ -1188,31 +1221,125 @@ function StandardsSetup({ standards, setStandards, showToast, institute }) {
             </div>
           </div>
 
-          {/* Section chips */}
+          {/* Section chips / Class Teacher selectors */}
           <div style={{ marginTop: 16 }}>
             {(!curStd || curStd.sections.length === 0) ? (
               <div style={{ padding: "16px", textAlign: "center", color: C.gray400, fontSize: 12, background: C.gray50, borderRadius: 8 }}>
                 No sections added yet. Use the tools above to add sections.
               </div>
             ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {curStd?.sections.map(sec => (
-                  <div key={sec.id} style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    padding: "7px 12px",
-                    background: C.accentLight,
-                    border: `1.5px solid ${C.accent}30`,
-                    borderRadius: 20,
-                  }}>
-                    <span style={{ fontSize: 13, color: C.accent, fontWeight: 600 }}>{curStd.name} – {sec.name}</span>
-                    <button onClick={() => removeSection(curStd.id, sec.id)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: C.accent, padding: 0, display: "flex", opacity: 0.6 }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                      onMouseLeave={e => e.currentTarget.style.opacity = 0.6}>
-                      <i className="ti ti-x" style={{ fontSize: 12 }} />
-                    </button>
-                  </div>
-                ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {curStd?.sections.map(sec => {
+                  return (
+                    <div key={sec.id} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                      padding: "12px 16px",
+                      background: C.white,
+                      border: `1px solid ${C.gray200}`,
+                      borderRadius: 12,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                      flexWrap: "wrap"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8,
+                          background: `${C.accent}14`, display: "flex",
+                          alignItems: "center", justifyContent: "center",
+                        }}>
+                          <i className="ti ti-layout-grid" style={{ fontSize: 15, color: C.accent }} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 13, color: C.gray800, fontWeight: 700 }}>{curStd.name} – {sec.name}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                        {/* Class Teacher Select */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>Class Teacher:</span>
+                          <select
+                            value={sec.classTeacherId || ""}
+                            onChange={e => {
+                              const teacherId = e.target.value || null;
+                              setStandards(p => p.map(s => s.id === curStd.id ? {
+                                ...s,
+                                sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherId: teacherId } : se)
+                              } : s));
+                              showToast("Class teacher updated");
+                            }}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: `1.5px solid ${C.gray200}`,
+                              fontSize: 12, outline: "none", background: C.white, fontFamily: "inherit"
+                            }}
+                          >
+                            <option value="">— Unassigned —</option>
+                            {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          </select>
+                        </div>
+
+                        {/* CT Period Mon-Sat */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>CT Period (Mon-Sat):</span>
+                          <select
+                            value={sec.classTeacherPeriodNormal !== undefined ? (sec.classTeacherPeriodNormal === null ? "none" : sec.classTeacherPeriodNormal) : 1}
+                            onChange={e => {
+                              const val = e.target.value === "none" ? null : parseInt(e.target.value);
+                              setStandards(p => p.map(s => s.id === curStd.id ? {
+                                ...s,
+                                sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherPeriodNormal: val } : se)
+                              } : s));
+                              showToast("Normal days period updated");
+                            }}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: `1.5px solid ${C.gray200}`,
+                              fontSize: 12, outline: "none", background: C.white, fontFamily: "inherit"
+                            }}
+                          >
+                            <option value="none">None</option>
+                            {Array.from({ length: parseInt(institute?.periodsPerDay) || 8 }, (_, i) => i + 1).map(n => (
+                              <option key={n} value={n}>Period {n}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* CT Period Friday */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>Friday Period:</span>
+                          <select
+                            value={sec.classTeacherPeriodFriday !== undefined ? (sec.classTeacherPeriodFriday === null ? "none" : sec.classTeacherPeriodFriday) : 2}
+                            onChange={e => {
+                              const val = e.target.value === "none" ? null : parseInt(e.target.value);
+                              setStandards(p => p.map(s => s.id === curStd.id ? {
+                                ...s,
+                                sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherPeriodFriday: val } : se)
+                              } : s));
+                              showToast("Friday period updated");
+                            }}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: `1.5px solid ${C.gray200}`,
+                              fontSize: 12, outline: "none", background: C.white, fontFamily: "inherit"
+                            }}
+                          >
+                            <option value="none">None</option>
+                            {Array.from({ length: parseInt(institute?.periodsPerDay) || 8 }, (_, i) => i + 1).map(n => (
+                              <option key={n} value={n}>Period {n}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <button onClick={() => removeSection(curStd.id, sec.id)}
+                          style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            color: C.danger, padding: "6px 8px", borderRadius: 6, display: "flex",
+                            alignItems: "center", justifyContent: "center", background: "#fef2f2"
+                          }}
+                          title="Remove Section">
+                          <i className="ti ti-trash" style={{ fontSize: 14 }} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

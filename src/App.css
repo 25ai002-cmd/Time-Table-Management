@@ -182,3 +182,232 @@
     border-right-color: var(--border);
   }
 }
+
+/* ─── Responsive Styles Breakpoints ───────────────────────────────────────── */
+
+/* Desktop & Laptop Sidebar default hover / transitions */
+.sidebar-aside {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), left 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Mobile Sidebar Toggle Button styling */
+.mobile-toggle-btn {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .mobile-toggle-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    color: #1e293b;
+    padding: 6px;
+    border-radius: 6px;
+  }
+  
+  .mobile-toggle-btn:hover {
+    background: #f1f5f9;
+  }
+
+  .sidebar-aside {
+    position: fixed !important;
+    left: -240px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 240px !important;
+    z-index: 100 !important;
+    box-shadow: 6px 0 24px rgba(0,0,0,0.15) !important;
+  }
+  
+  .sidebar-aside.open {
+    left: 0 !important;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+  }
+  
+  .app-header {
+    padding: 0 16px !important;
+  }
+  
+  .page-content {
+    padding: 18px 16px !important;
+  }
+
+  /* Setup Screen Columns Stack */
+  .setup-layout {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+  
+  .setup-sidebar {
+    width: 100% !important;
+  }
+  
+  .setup-content {
+    width: 100% !important;
+  }
+
+  /* Dashboard checklists Stack */
+  .dashboard-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  /* Dashboard Stats Grid to 3 columns */
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Auth Screen Stacking / Left branding hide */
+  .auth-left-panel {
+    display: none !important;
+  }
+  
+  .auth-right-panel {
+    width: 100% !important;
+    padding: 16px !important;
+  }
+  
+  .auth-card-wrapper {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+    padding: 24px 20px 20px !important;
+    border-radius: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Header compress text to only show icons on phones */
+  .header-actions {
+    gap: 6px !important;
+  }
+  
+  .header-btn {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+  }
+  
+  .btn-text {
+    display: none !important;
+  }
+  
+  .header-btn i {
+    margin: 0 !important;
+    font-size: 16px !important;
+  }
+  
+  .save-indicator {
+    padding: 4px 6px !important;
+  }
+  
+  .save-text {
+    display: none !important;
+  }
+  
+  .header-sub {
+    display: none !important;
+  }
+
+  /* Dashboard Hero Stack */
+  .dashboard-hero {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding: 20px !important;
+  }
+  
+  .dashboard-hero-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+  
+  .dashboard-hero-actions button {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+  }
+
+  /* Setup row layouts stack to single columns */
+  .setup-row-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+  
+  .setup-row-grid button,
+  .setup-row-grid select,
+  .setup-row-grid input {
+    width: 100% !important;
+  }
+  
+  .subject-add-grid button {
+    margin-top: 4px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Stats grid to 2 columns on phones */
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Stepper connector lines shrink */
+  .stepper-line {
+    width: 40px !important;
+  }
+  
+  .setup-card {
+    padding: 20px 16px !important;
+  }
+
+  /* AI Panel fits mobile screen */
+  .ai-panel {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Smaller stepper spacing */
+  .stepper-line {
+    width: 20px !important;
+  }
+  
+  .stepper-indicator span {
+    font-size: 9px !important;
+  }
+
+  /* 2 column small grids stack */
+  .setup-row-grid-2col {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Timetable Editor modals fits 100% width on phone */
+  .editor-modal {
+    width: 95% !important;
+    padding: 16px 14px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  /* Single column stats for extremely small screens */
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+

@@ -331,7 +331,7 @@ export default function TimetableEditor({
     return (
       <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9998 }}
         onClick={() => setEditCell(null)}>
-        <div style={{ background:C.white, borderRadius:16, padding:"24px 28px", width:400, boxShadow:"0 20px 50px rgba(0,0,0,0.3)" }}
+        <div className="editor-modal" style={{ background:C.white, borderRadius:16, padding:"24px 28px", width:400, boxShadow:"0 20px 50px rgba(0,0,0,0.3)" }}
           onClick={e => e.stopPropagation()}>
           <div style={{ fontSize:15, fontWeight:800, color:C.gray800, marginBottom:4 }}>Edit Period</div>
           <div style={{ fontSize:12, color:C.gray400, marginBottom:18 }}>{day} · Period {periodNum}</div>
@@ -407,7 +407,7 @@ export default function TimetableEditor({
   return (
     <div>
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div style={{ background:C.white, border:`1px solid ${C.gray200}`, borderRadius:12, padding:"12px 18px", marginBottom:16, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+      <div className="editor-toolbar" style={{ background:C.white, border:`1px solid ${C.gray200}`, borderRadius:12, padding:"12px 18px", marginBottom:16, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
 
         {/* View mode toggle */}
         <div style={{ display:"flex", gap:4, background:C.gray100, borderRadius:8, padding:3 }}>

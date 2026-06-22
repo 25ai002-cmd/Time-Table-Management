@@ -134,10 +134,10 @@ export default function SubjectsSetup({ subjects, setSubjects, standards, showTo
   };
 
   return (
-    <div style={{ display:"flex", gap:20, maxWidth:1100, alignItems:"flex-start" }}>
+    <div className="setup-layout" style={{ display:"flex", gap:20, maxWidth:1100, alignItems:"flex-start" }}>
 
       {/* Left — Class selector */}
-      <div style={{ width:220, flexShrink:0, display:"flex", flexDirection:"column", gap:12 }}>
+      <div className="setup-sidebar" style={{ width:220, flexShrink:0, display:"flex", flexDirection:"column", gap:12 }}>
         <div style={{ background:C.white, border:`1px solid ${C.gray200}`, borderRadius:14, overflow:"hidden", boxShadow:"0 1px 6px rgba(0,0,0,0.04)" }}>
           <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.gray100}`, display:"flex", alignItems:"center", gap:8 }}>
             <i className="ti ti-books" style={{ fontSize:16, color:C.accent }} />
@@ -253,7 +253,7 @@ export default function SubjectsSetup({ subjects, setSubjects, standards, showTo
       </div>
 
       {/* Right — Subject management */}
-      <div style={{ flex:1 }}>
+      <div className="setup-content" style={{ flex:1 }}>
         {!selStd ? (
           <div style={{ textAlign:"center", padding:"60px 20px", background:C.white, borderRadius:16, border:`1px solid ${C.gray200}` }}>
             <i className="ti ti-hand-click" style={{ fontSize:40, color:C.gray300, display:"block", marginBottom:12 }} />
@@ -398,7 +398,7 @@ export default function SubjectsSetup({ subjects, setSubjects, standards, showTo
               ) : (
                 // Single Add — name + settings
                 <div style={{ background:C.gray50, border:`1px solid ${C.gray200}`, borderRadius:10, padding:16 }}>
-                  <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr auto", gap:10, alignItems:"end", marginBottom:12 }}>
+                  <div className="setup-row-grid subject-add-grid" style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr auto", gap:10, alignItems:"end", marginBottom:12 }}>
                     <div>
                       <div style={{ fontSize:11, fontWeight:600, color:C.gray500, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.04em" }}>Subject Name</div>
                       {subjOptions.length > 0 && !isSubjCustom ? (
@@ -463,7 +463,7 @@ export default function SubjectsSetup({ subjects, setSubjects, standards, showTo
                       🔬 This subject has a separate Lab / Practical component
                     </label>
                     {newSubj.hasLab && (
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:10, background:C.white, border:`1px solid ${C.gray200}`, borderRadius:8, padding:12 }}>
+                      <div className="setup-row-grid-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:10, background:C.white, border:`1px solid ${C.gray200}`, borderRadius:8, padding:12 }}>
                         <div>
                           <label style={{ display:"block", fontSize:11, fontWeight:600, color:C.gray500, marginBottom:4 }}>Lab Periods / Week</label>
                           <select value={newSubj.labPeriodsPerWeek || 2} onChange={e => setNewSubj(p => ({...p, labPeriodsPerWeek:parseInt(e.target.value)}))} style={inp}>
@@ -527,7 +527,7 @@ export default function SubjectsSetup({ subjects, setSubjects, standards, showTo
                               🔬 Include Lab / Practical component
                             </label>
                             {editData.hasLab && (
-                              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, background:C.gray50, border:`1px solid ${C.gray200}`, borderRadius:8, padding:10 }}>
+                              <div className="setup-row-grid-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, background:C.gray50, border:`1px solid ${C.gray200}`, borderRadius:8, padding:10 }}>
                                 <div>
                                   <label style={{ display:"block", fontSize:10, color:C.gray500, marginBottom:2 }}>Lab Periods / Week</label>
                                   <select value={editData.labPeriodsPerWeek || 2} onChange={e => setEditData(p => ({...p, labPeriodsPerWeek:parseInt(e.target.value)}))} style={inp}>

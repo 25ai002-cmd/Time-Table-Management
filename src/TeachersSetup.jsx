@@ -205,10 +205,10 @@ export default function TeachersSetup({ teachers, setTeachers, subjects, standar
   }
 
   return (
-    <div style={{ display:"flex", gap:20, maxWidth:1100, alignItems:"flex-start" }}>
+    <div className="setup-layout" style={{ display:"flex", gap:20, maxWidth:1100, alignItems:"flex-start" }}>
 
       {/* Left — teacher list */}
-      <div style={{ width:240, flexShrink:0 }}>
+      <div className="setup-sidebar" style={{ width:240, flexShrink:0 }}>
         <div style={{ background:C.white, border:`1px solid ${C.gray200}`, borderRadius:12, overflow:"hidden" }}>
           <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.gray100}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <span style={{ fontSize:13, fontWeight:700, color:C.gray700 }}>Teachers ({teachers.length})</span>
@@ -252,7 +252,7 @@ export default function TeachersSetup({ teachers, setTeachers, subjects, standar
       </div>
 
       {/* Right — teacher detail + assignments */}
-      <div style={{ flex:1 }}>
+      <div className="setup-content" style={{ flex:1 }}>
 
         {/* Add new teacher form */}
         {addingTeacher && (
@@ -260,7 +260,7 @@ export default function TeachersSetup({ teachers, setTeachers, subjects, standar
             <div style={{ fontSize:14, fontWeight:800, color:C.gray800, marginBottom:14 }}>
               <i className="ti ti-user-plus" style={{ marginRight:8, color:C.accent }} />Add New Teacher
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:10, marginBottom:12 }}>
+            <div className="setup-row-grid teacher-add-grid" style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:10, marginBottom:12 }}>
               <div>
                 <div style={{ fontSize:11, fontWeight:600, color:C.gray600, marginBottom:4 }}>Full Name *</div>
                 <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}
@@ -287,7 +287,7 @@ export default function TeachersSetup({ teachers, setTeachers, subjects, standar
                 </select>
               </div>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:16, marginBottom:16 }}>
+            <div className="setup-row-grid-2col" style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:16, marginBottom:16 }}>
               <div>
                 <div style={{ fontSize:11, fontWeight:600, color:C.gray600, marginBottom:6 }}>Class / Standard to Teach</div>
                 <select 

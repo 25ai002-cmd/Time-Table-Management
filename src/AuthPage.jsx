@@ -148,7 +148,7 @@ export default function AuthPage() {
         .email-toggle:hover { background:#f0f5ff !important; }
       `}</style>
 
-      <div style={{
+      <div className="auth-container" style={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "stretch",
@@ -163,7 +163,7 @@ export default function AuthPage() {
         <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",background:"rgba(255,255,255,0.025)",top:"30%",left:"22%",pointerEvents:"none"}} />
 
         {/* ── Left branding ──────────────────────────────────────────────── */}
-        <div style={{
+        <div className="auth-left-panel" style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
@@ -211,7 +211,7 @@ export default function AuthPage() {
         </div>
 
         {/* ── Right auth card ─────────────────────────────────────────────── */}
-        <div style={{
+        <div className="auth-right-panel" style={{
           width: 468,
           flexShrink: 0,
           display: "flex",
@@ -219,7 +219,7 @@ export default function AuthPage() {
           justifyContent: "center",
           padding: "28px 24px",
         }}>
-          <div className="auth-card" style={{
+          <div className="auth-card-wrapper" style={{
             background: "#fff",
             borderRadius: 22,
             padding: "36px 34px 32px",

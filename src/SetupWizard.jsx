@@ -83,7 +83,7 @@ export default function SetupWizard({ onComplete }) {
       padding: 24,
       fontFamily: "'Inter', sans-serif",
     }}>
-      <div style={{ width: "100%", maxWidth: 620 }}>
+      <div className="setup-inner" style={{ width: "100%", maxWidth: 620 }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -103,7 +103,7 @@ export default function SetupWizard({ onComplete }) {
         </div>
 
         {/* Step indicator */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 32 }}>
+        <div className="stepper-indicator" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 32 }}>
           {steps.map((s, i) => (
             <div key={s.num} style={{ display: "flex", alignItems: "center" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -121,14 +121,14 @@ export default function SetupWizard({ onComplete }) {
                 <span style={{ fontSize: 11, color: step === s.num ? C.accent : C.gray400, fontWeight: step === s.num ? 600 : 400, whiteSpace: "nowrap" }}>{s.label}</span>
               </div>
               {i < steps.length - 1 && (
-                <div style={{ width: 80, height: 2, background: step > s.num ? C.success : C.gray200, margin: "0 4px", marginBottom: 20, transition: "all 0.3s" }} />
+                <div className="stepper-line" style={{ width: 80, height: 2, background: step > s.num ? C.success : C.gray200, margin: "0 4px", marginBottom: 20, transition: "all 0.3s" }} />
               )}
             </div>
           ))}
         </div>
 
         {/* Card */}
-        <div style={{ background: C.white, borderRadius: 16, padding: "32px 36px", boxShadow: "0 8px 30px rgba(0,0,0,0.08)", border: `1px solid ${C.gray200}` }}>
+        <div className="setup-card" style={{ background: C.white, borderRadius: 16, padding: "32px 36px", boxShadow: "0 8px 30px rgba(0,0,0,0.08)", border: `1px solid ${C.gray200}` }}>
 
           {/* STEP 1 — Institution Details */}
           {step === 1 && (
