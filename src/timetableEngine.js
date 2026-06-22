@@ -109,9 +109,10 @@ export function generateTimetable(institute, standards, subjects, teachers, room
       if (sec.classTeacherId) {
         const classTeacher = teachers.find(t => t.id === sec.classTeacherId);
         if (classTeacher) {
+          const specialDay = sec.classTeacherSpecialDay || "Friday";
           days.forEach(d => {
             // Resolve the target period number
-            const targetPeriodNum = d === "Friday"
+            const targetPeriodNum = d === specialDay
               ? (sec.classTeacherPeriodFriday !== undefined && sec.classTeacherPeriodFriday !== null ? sec.classTeacherPeriodFriday : 2)
               : (sec.classTeacherPeriodNormal !== undefined && sec.classTeacherPeriodNormal !== null ? sec.classTeacherPeriodNormal : 1);
 
@@ -227,12 +228,28 @@ export function generateTimetable(institute, standards, subjects, teachers, room
           }
         }
 
+        // Fallback 2 (Ultimate): If still no subject fits (e.g. no teacher assigned),
+        // pick the first subject from slots and schedule it with teacher = null and room = null (or available room)
+        if (chosenIdx === -1 && slots.length > 0) {
+          const sub = slots[0];
+          const eligibleRooms = rooms.filter(r =>
+            (!sub.roomType || r.type === sub.roomType) && !roomSchedule[r.id][d][p.num]
+          );
+          chosenIdx = 0;
+          chosenTeacher = null;
+          chosenRoom = eligibleRooms[0] || null;
+        }
+
         // If we found a slot, assign it
         if (chosenIdx !== -1) {
           const sub = slots[chosenIdx];
           timetable[key][d][p.num] = { subject: sub, teacher: chosenTeacher, room: chosenRoom };
-          teacherSchedule[chosenTeacher.id][d][p.num] = { subject: sub, class: std, section: sec };
-          if (chosenRoom) roomSchedule[chosenRoom.id][d][p.num] = { subject: sub, class: std, section: sec };
+          if (chosenTeacher) {
+            teacherSchedule[chosenTeacher.id][d][p.num] = { subject: sub, class: std, section: sec };
+          }
+          if (chosenRoom) {
+            roomSchedule[chosenRoom.id][d][p.num] = { subject: sub, class: std, section: sec };
+          }
 
           // Remove the scheduled slot
           slots.splice(chosenIdx, 1);

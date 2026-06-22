@@ -1243,6 +1243,8 @@ function StandardsSetup({ standards, setStandards, teachers, subjects, showToast
                     return classTeacher.subjects?.includes(sub.id) || false;
                   }) : [];
 
+                  const specialDay = sec.classTeacherSpecialDay || "Friday";
+
                   return (
                     <div key={sec.id} style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
@@ -1323,9 +1325,9 @@ function StandardsSetup({ standards, setStandards, teachers, subjects, showToast
                           </span>
                         )}
 
-                        {/* CT Period Mon-Sat */}
+                        {/* CT Period Normal */}
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>CT Period (Mon-Sat):</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>CT Period (Other Days):</span>
                           <select
                             value={sec.classTeacherPeriodNormal !== undefined ? (sec.classTeacherPeriodNormal === null ? "none" : sec.classTeacherPeriodNormal) : 1}
                             onChange={e => {
@@ -1348,9 +1350,33 @@ function StandardsSetup({ standards, setStandards, teachers, subjects, showToast
                           </select>
                         </div>
 
-                        {/* CT Period Friday */}
+                        {/* Special Day Select */}
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>Friday Period:</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>Special Day:</span>
+                          <select
+                            value={sec.classTeacherSpecialDay || "Friday"}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setStandards(p => p.map(s => s.id === curStd.id ? {
+                                ...s,
+                                sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherSpecialDay: val } : se)
+                              } : s));
+                              showToast("Special day updated");
+                            }}
+                            style={{
+                              padding: "6px 10px", borderRadius: 8, border: `1.5px solid ${C.gray200}`,
+                              fontSize: 12, outline: "none", background: C.white, fontFamily: "inherit"
+                            }}
+                          >
+                            {DAYS.slice(0, institute?.workingDays || 5).map(day => (
+                              <option key={day} value={day}>{day}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* CT Period Special Day */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: C.gray500, textTransform: "uppercase" }}>{specialDay} Period:</span>
                           <select
                             value={sec.classTeacherPeriodFriday !== undefined ? (sec.classTeacherPeriodFriday === null ? "none" : sec.classTeacherPeriodFriday) : 2}
                             onChange={e => {
@@ -1359,7 +1385,7 @@ function StandardsSetup({ standards, setStandards, teachers, subjects, showToast
                                 ...s,
                                 sections: s.sections.map(se => se.id === sec.id ? { ...se, classTeacherPeriodFriday: val } : se)
                               } : s));
-                              showToast("Friday period updated");
+                              showToast(`${specialDay} period updated`);
                             }}
                             style={{
                               padding: "6px 10px", borderRadius: 8, border: `1.5px solid ${C.gray200}`,
