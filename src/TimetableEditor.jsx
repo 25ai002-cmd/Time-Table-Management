@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { computePeriods, DAYS, PERIOD_COLORS, validateDrop, applySwap, validateFullTimetable } from "./timetableEngine";
+import { computePeriods, DAYS, PERIOD_COLORS, validateDrop, applySwap, validateFullTimetable, resolveTimetableConflicts } from "./timetableEngine";
 
 const C = {
   accent:"#2563eb", primary:"#1a4b8c", success:"#16a34a", danger:"#dc2626",
@@ -108,18 +108,14 @@ export default function TimetableEditor({
     if (!src) return;
     if (src.classKey === tgtKey && src.day === tgtDay && src.periodNum === tgtPeriod) return;
 
-    const result = validateDrop(generatedTT.timetable, generatedTT.teacherSchedule,
-      src, { classKey: tgtKey, day: tgtDay, periodNum: tgtPeriod });
+    let newState = applySwap(generatedTT, src, { classKey: tgtKey, day: tgtDay, periodNum: tgtPeriod });
+    
+    // Automatically adjust conflicts
+    const lockedKey = `${tgtKey}_${tgtDay}_${tgtPeriod}`;
+    newState = resolveTimetableConflicts(newState, standards, lockedKey);
 
-    if (!result.valid) {
-      setDropError(result.reason);
-      setTimeout(() => setDropError(null), 5000);
-      return;
-    }
-
-    const newState = applySwap(generatedTT, src, { classKey: tgtKey, day: tgtDay, periodNum: tgtPeriod });
     pushHistory(newState);
-    showToast("Period moved successfully ✓");
+    showToast("Period moved and timetable adjusted successfully ✓");
   };
 
   // ── Validate full timetable ──────────────────────────────────────────────
@@ -137,7 +133,7 @@ export default function TimetableEditor({
   const saveEditCell = (newSubject, newTeacher) => {
     if (!editCell) return;
     const { classKey: ck, day, periodNum } = editCell;
-    const newState = JSON.parse(JSON.stringify(generatedTT));
+    let newState = JSON.parse(JSON.stringify(generatedTT));
     const oldCell = newState.timetable[ck]?.[day]?.[periodNum];
 
     // Clear old teacher slot
@@ -159,9 +155,13 @@ export default function TimetableEditor({
       newState.timetable[ck][day][periodNum] = null;
     }
 
+    // Automatically adjust conflicts
+    const lockedKey = `${ck}_${day}_${periodNum}`;
+    newState = resolveTimetableConflicts(newState, standards, lockedKey);
+
     pushHistory(newState);
     setEditCell(null);
-    showToast("Period updated ✓");
+    showToast("Period updated and timetable adjusted successfully ✓");
   };
 
   // ── Period cell component ────────────────────────────────────────────────

@@ -425,3 +425,154 @@ export function migrateData(data) {
     }),
   };
 }
+
+// Automatically resolve teacher double-booking conflicts by swapping periods within the conflicting class
+export function resolveTimetableConflicts(generatedTT, standards, lockedKey = null) {
+  const newState = JSON.parse(JSON.stringify(generatedTT));
+  const { timetable, teacherSchedule, roomSchedule, days, periods } = newState;
+
+  // Helper to check if a teacher is busy at (d, p) in any class other than exceptClassKey
+  const isTeacherBusyElsewhere = (teacherId, d, pNum, exceptClassKey) => {
+    for (const [classKey, dayMap] of Object.entries(timetable)) {
+      if (classKey === exceptClassKey) continue;
+      const cell = dayMap[d]?.[pNum];
+      if (cell?.teacher?.id === teacherId) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  let maxPasses = 5;
+  let changedAny = true;
+
+  while (maxPasses > 0 && changedAny) {
+    changedAny = false;
+    maxPasses--;
+
+    // Find all teacher bookings
+    const bookings = {};
+    for (const [classKey, dayMap] of Object.entries(timetable)) {
+      for (const [d, periodMap] of Object.entries(dayMap)) {
+        for (const [pNumStr, cell] of Object.entries(periodMap)) {
+          if (cell?.teacher?.id) {
+            const slotKey = `${d}_${pNumStr}`;
+            if (!bookings[slotKey]) bookings[slotKey] = [];
+            bookings[slotKey].push({ classKey, teacherId: cell.teacher.id, cell });
+          }
+        }
+      }
+    }
+
+    // Process double bookings
+    for (const [slotKey, list] of Object.entries(bookings)) {
+      if (list.length <= 1) continue;
+
+      const [d, pNumStr] = slotKey.split("_");
+      const pNum = parseInt(pNumStr);
+
+      let lockedIndex = list.findIndex(b => lockedKey === `${b.classKey}_${d}_${pNum}`);
+      if (lockedIndex === -1) lockedIndex = 0;
+
+      const pivoted = list[lockedIndex];
+
+      for (let idx = 0; idx < list.length; idx++) {
+        if (idx === lockedIndex) continue;
+        const target = list[idx];
+
+        let resolved = false;
+        const targetClassTT = timetable[target.classKey];
+
+        const candidateSlots = [];
+        days.forEach(d2 => {
+          periods.forEach(p2 => {
+            if (d2 === d && p2.num === pNum) return;
+            if (lockedKey === `${target.classKey}_${d2}_${p2.num}`) return;
+            candidateSlots.push({ d2, p2Num: p2.num });
+          });
+        });
+
+        candidateSlots.sort(() => Math.random() - 0.5);
+
+        for (const { d2, p2Num } of candidateSlots) {
+          const cell2 = targetClassTT[d2]?.[p2Num];
+
+          const t1Id = target.cell.teacher.id;
+          const t2Id = cell2?.teacher?.id || null;
+
+          const t1Busy = isTeacherBusyElsewhere(t1Id, d2, p2Num, target.classKey);
+          const t2Busy = t2Id ? isTeacherBusyElsewhere(t2Id, d, pNum, target.classKey) : false;
+
+          if (!t1Busy && !t2Busy) {
+            // Apply swap in timetable
+            targetClassTT[d][pNum] = cell2;
+            if (!targetClassTT[d2]) targetClassTT[d2] = {};
+            targetClassTT[d2][p2Num] = target.cell;
+
+            // Lookup standard and section details
+            const [stdId, secId] = target.classKey.split("_");
+            const stdObj = standards.find(s => s.id === stdId);
+            const secObj = stdObj?.sections.find(s => s.id === secId);
+            const std = stdObj ? { id: stdObj.id, name: stdObj.name } : { id: stdId };
+            const sec = secObj ? { id: secObj.id, name: secObj.name } : { id: secId };
+
+            // Update teacherSchedule for T1
+            if (teacherSchedule[t1Id]?.[d]) delete teacherSchedule[t1Id][d][pNum];
+            if (!teacherSchedule[t1Id]) teacherSchedule[t1Id] = {};
+            if (!teacherSchedule[t1Id][d2]) teacherSchedule[t1Id][d2] = {};
+            teacherSchedule[t1Id][d2][p2Num] = { subject: target.cell.subject, class: std, section: sec };
+
+            // Update teacherSchedule for T2
+            if (t2Id) {
+              if (teacherSchedule[t2Id]?.[d2]) delete teacherSchedule[t2Id][d2][p2Num];
+              if (!teacherSchedule[t2Id]) teacherSchedule[t2Id] = {};
+              if (!teacherSchedule[t2Id][d]) teacherSchedule[t2Id][d] = {};
+              teacherSchedule[t2Id][d][pNum] = { subject: cell2.subject, class: std, section: sec };
+            }
+
+            resolved = true;
+            changedAny = true;
+            break;
+          }
+        }
+
+        if (!resolved) {
+          // Fallback: unassign teacher from conflicting slot
+          targetClassTT[d][pNum] = { ...target.cell, teacher: null };
+          const t1Id = target.cell.teacher.id;
+          if (teacherSchedule[t1Id]?.[d]) {
+            delete teacherSchedule[t1Id][d][pNum];
+          }
+          changedAny = true;
+        }
+      }
+    }
+  }
+
+  // Sync roomSchedule
+  for (const rId of Object.keys(roomSchedule)) {
+    roomSchedule[rId] = {};
+    days.forEach(d => { roomSchedule[rId][d] = {}; });
+  }
+  for (const [classKey, dayMap] of Object.entries(timetable)) {
+    const [stdId, secId] = classKey.split("_");
+    const stdObj = standards.find(s => s.id === stdId);
+    const secObj = stdObj?.sections.find(s => s.id === secId);
+    const std = stdObj ? { id: stdObj.id, name: stdObj.name } : { id: stdId };
+    const sec = secObj ? { id: secObj.id, name: secObj.name } : { id: secId };
+    
+    for (const [d, periodMap] of Object.entries(dayMap)) {
+      for (const [pNumStr, cell] of Object.entries(periodMap)) {
+        if (cell?.room?.id) {
+          const rId = cell.room.id;
+          if (roomSchedule[rId]) {
+            if (!roomSchedule[rId][d]) roomSchedule[rId][d] = {};
+            roomSchedule[rId][d][parseInt(pNumStr)] = { subject: cell.subject, class: std, section: sec };
+          }
+        }
+      }
+    }
+  }
+
+  return newState;
+}
