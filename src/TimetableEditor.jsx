@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { computePeriods, DAYS, PERIOD_COLORS, validateDrop, applySwap, validateFullTimetable, resolveTimetableConflicts } from "./timetableEngine";
+import { computePeriods, DAYS, PERIOD_COLORS, validateDrop, applySwap, validateFullTimetable, resolveTimetableConflicts, getPeriodsCountForDay } from "./timetableEngine";
 
 const C = {
   accent:"#2563eb", primary:"#1a4b8c", success:"#16a34a", danger:"#dc2626",
@@ -170,6 +170,20 @@ export default function TimetableEditor({
     const isDragOver = dragOver?.classKey === ck && dragOver.day === day && dragOver.periodNum === periodNum;
     const bg = cell?.subject ? subjectColor(cell.subject.id, subjects) : C.gray50;
 
+    const dayPeriodsLimit = getPeriodsCountForDay(institute, day);
+    if (periodNum > dayPeriodsLimit) {
+      return (
+        <div style={{
+          minHeight: 70, padding: "6px 8px", borderRadius: 8,
+          background: C.gray100, border: `1.5px solid ${C.gray200}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: C.gray400, fontSize: 11, fontWeight: 600, cursor: "not-allowed"
+        }}>
+          —
+        </div>
+      );
+    }
+
     return (
       <div
         draggable={!!cell}
@@ -291,6 +305,20 @@ export default function TimetableEditor({
                   </td>
                 ) : (
                   days.map(d => {
+                    const dayPeriodsLimit = getPeriodsCountForDay(institute, d);
+                    if (slot.num > dayPeriodsLimit) {
+                      return (
+                        <td key={d} style={{ padding: "4px 6px" }}>
+                          <div style={{
+                            minHeight: 70, borderRadius: 8, background: C.gray100,
+                            border: `1.5px solid ${C.gray200}`, display: "flex",
+                            alignItems: "center", justifyContent: "center"
+                          }}>
+                            <span style={{ fontSize: 10, color: C.gray400, fontWeight: 600 }}>—</span>
+                          </div>
+                        </td>
+                      );
+                    }
                     const entry = ts?.[d]?.[slot.num];
                     return (
                       <td key={d} style={{ padding:"4px 6px" }}>

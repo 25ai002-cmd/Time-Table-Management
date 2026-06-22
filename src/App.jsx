@@ -7,7 +7,7 @@ import SubjectsSetup from "./SubjectsSetup";
 import TeachersSetup from "./TeachersSetup";
 import TimetableEditor from "./TimetableEditor";
 import AIAssistant from "./AIAssistant";
-import { generateTimetable, computePeriods, DAYS, PERIOD_COLORS, migrateData } from "./timetableEngine";
+import { generateTimetable, computePeriods, DAYS, PERIOD_COLORS, migrateData, getPeriodsCountForDay } from "./timetableEngine";
 import { parseExcelFile, parseTSVData, FIELD_DEFINITIONS, autoMapFields } from "./importHelper";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -205,6 +205,31 @@ export default function App() {
   const { user, authLoading, signOut } = useAuth();
 
   const [institute, setInstitute] = useState(EMPTY_INSTITUTE);
+  
+  const getMaxPeriods = (inst) => {
+    const normal = parseInt(inst.periodsPerDay) || 8;
+    const sat = inst.workingDays === 6 ? (parseInt(inst.saturdayPeriodsCount) ?? 6) : 0;
+    return Math.max(normal, sat);
+  };
+
+  useEffect(() => {
+    if (institute?.customPeriods && institute.customPeriods.length > 0) {
+      const maxP = getMaxPeriods(institute);
+      if (institute.customPeriods.length !== maxP) {
+        const current = [...institute.customPeriods];
+        if (current.length < maxP) {
+          const autoP = computePeriods({ ...institute, customPeriods: null }).filter(p => p.type === "period");
+          for (let n = current.length + 1; n <= maxP; n++) {
+            const defaultP = autoP.find(p => p.num === n) || { num: n, start: "08:00", end: "08:45" };
+            current.push({ num: n, start: defaultP.start, end: defaultP.end });
+          }
+        } else {
+          current.splice(maxP);
+        }
+        setInstitute(p => ({ ...p, customPeriods: current }));
+      }
+    }
+  }, [institute?.periodsPerDay, institute?.saturdayPeriodsCount, institute?.workingDays]);
   const [standards, setStandards] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -878,23 +903,41 @@ function InstituteSetup({ institute, setInstitute, showToast }) {
         </div>
       </Card>
 
-      <Card title="Schedule Configuration" icon="ti-clock" subtitle="Working days, periods, and timing">
+      <Card title="Schedule Configuration" icon="ti-clock" subtitle="Working days, periods, and timing" style={{ marginBottom: 20 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 24px" }}>
           <FormRow label="Working Days / Week">
             <select value={institute.workingDays} onChange={e => upd("workingDays", parseInt(e.target.value))} style={inputStyle}>
               {[5, 6].map(d => <option key={d} value={d}>{d} Days</option>)}
             </select>
           </FormRow>
-          <FormRow label="Periods per Day">
-            <select value={institute.periodsPerDay} onChange={e => upd("periodsPerDay", parseInt(e.target.value))} style={inputStyle}>
-              {[6, 7, 8, 9, 10].map(d => <option key={d} value={d}>{d} Periods</option>)}
-            </select>
-          </FormRow>
+          
+          {institute.workingDays === 6 ? (
+            <>
+              <FormRow label="Mon-Fri Periods">
+                <select value={institute.periodsPerDay} onChange={e => upd("periodsPerDay", parseInt(e.target.value))} style={inputStyle}>
+                  {[6, 7, 8, 9, 10].map(d => <option key={d} value={d}>{d} Periods</option>)}
+                </select>
+              </FormRow>
+              <FormRow label="Saturday Periods">
+                <select value={institute.saturdayPeriodsCount !== undefined ? institute.saturdayPeriodsCount : 6} onChange={e => upd("saturdayPeriodsCount", parseInt(e.target.value))} style={inputStyle}>
+                  {[4, 5, 6, 7, 8, 9, 10].map(d => <option key={d} value={d}>{d} Periods</option>)}
+                </select>
+              </FormRow>
+            </>
+          ) : (
+            <FormRow label="Periods per Day">
+              <select value={institute.periodsPerDay} onChange={e => upd("periodsPerDay", parseInt(e.target.value))} style={inputStyle}>
+                {[6, 7, 8, 9, 10].map(d => <option key={d} value={d}>{d} Periods</option>)}
+              </select>
+            </FormRow>
+          )}
+          
           <FormRow label="Period Duration">
             <select value={institute.periodDuration} onChange={e => upd("periodDuration", parseInt(e.target.value))} style={inputStyle}>
               {[35, 40, 45, 50, 55, 60].map(d => <option key={d} value={d}>{d} min</option>)}
             </select>
           </FormRow>
+          
           <FormRow label="School Start Time">
             <input type="time" value={institute.startTime} onChange={e => upd("startTime", e.target.value)} style={inputStyle} />
           </FormRow>
@@ -916,6 +959,88 @@ function InstituteSetup({ institute, setInstitute, showToast }) {
         <div style={{ marginTop: 16, padding: "10px 14px", background: C.successLight, border: `1px solid #bbf7d0`, borderRadius: 8, fontSize: 12, color: "#065f46", display: "flex", alignItems: "center", gap: 8 }}>
           <i className="ti ti-cloud-check" style={{ fontSize: 15 }} />
           Changes are automatically saved to your private account in real time.
+        </div>
+      </Card>
+
+      {/* Period Time Customization Card */}
+      <Card title="Period Timing Customization" icon="ti-clock-record" subtitle="Customize start and end times for each period individually">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <button
+              onClick={() => {
+                if (institute.customPeriods && institute.customPeriods.length > 0) {
+                  upd("customPeriods", null);
+                  showToast("Switched to auto-calculated period timings");
+                } else {
+                  const autoP = computePeriods({ ...institute, customPeriods: null }).filter(p => p.type === "period");
+                  const customP = autoP.map(p => ({ num: p.num, start: p.start, end: p.end }));
+                  upd("customPeriods", customP);
+                  showToast("Period timing customization enabled!");
+                }
+              }}
+              style={{
+                padding: "8px 14px", borderRadius: 8, border: "none",
+                background: institute.customPeriods ? C.danger : C.accent,
+                color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12,
+                fontFamily: "inherit"
+              }}
+            >
+              {institute.customPeriods ? "Disable Custom Timings (Use Auto)" : "Enable Custom Period Timings"}
+            </button>
+          </div>
+
+          {institute.customPeriods && institute.customPeriods.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+              {institute.customPeriods.map((cp, idx) => {
+                const getDuration = (start, end) => {
+                  if (!start || !end) return "0";
+                  const [sH, sM] = start.split(":").map(Number);
+                  const [eH, eM] = end.split(":").map(Number);
+                  const diff = (eH * 60 + eM) - (sH * 60 + sM);
+                  return diff > 0 ? `${diff} min` : "Invalid";
+                };
+
+                return (
+                  <div key={cp.num} style={{ background: C.gray50, border: `1.5px solid ${C.gray200}`, borderRadius: 10, padding: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: C.gray800, marginBottom: 8 }}>Period {cp.num}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 11, color: C.gray500, width: 40 }}>Start:</span>
+                        <input
+                          type="time"
+                          value={cp.start}
+                          onChange={e => {
+                            const newP = institute.customPeriods.map(p => p.num === cp.num ? { ...p, start: e.target.value } : p);
+                            upd("customPeriods", newP);
+                          }}
+                          style={{ ...inputStyle, padding: "4px 8px", fontSize: 12, width: "100%" }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 11, color: C.gray500, width: 40 }}>End:</span>
+                        <input
+                          type="time"
+                          value={cp.end}
+                          onChange={e => {
+                            const newP = institute.customPeriods.map(p => p.num === cp.num ? { ...p, end: e.target.value } : p);
+                            upd("customPeriods", newP);
+                          }}
+                          style={{ ...inputStyle, padding: "4px 8px", fontSize: 12, width: "100%" }}
+                        />
+                      </div>
+                      <div style={{ fontSize: 11, color: C.gray500, marginTop: 4, textAlign: "right", fontWeight: 600 }}>
+                        Duration: <span style={{ color: C.accent }}>{getDuration(cp.start, cp.end)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: C.gray500, background: C.gray50, padding: 12, borderRadius: 8 }}>
+              💡 Period times are currently automatically calculated using <strong>School Start Time</strong> ({institute.startTime}) and <strong>Period Duration</strong> ({institute.periodDuration} min). Enable customization to override times for each period.
+            </div>
+          )}
         </div>
       </Card>
     </div>

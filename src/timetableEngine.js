@@ -12,25 +12,55 @@ export function generateId() {
 
 // Compute all time slots (periods + breaks) for a day
 export function computePeriods(institute) {
+  if (institute?.customPeriods && institute.customPeriods.length > 0) {
+    const periods = [];
+    const sortedCustom = [...institute.customPeriods].sort((a,b) => a.num - b.num);
+    
+    for (let i = 0; i < sortedCustom.length; i++) {
+      const cp = sortedCustom[i];
+      
+      // If there is a gap between the previous period's end and this period's start, add a break!
+      if (i > 0) {
+        const prev = sortedCustom[i-1];
+        const prevEndMin = prev.end.split(":").map(Number).reduce((a,b)=>a*60+b);
+        const curStartMin = cp.start.split(":").map(Number).reduce((a,b)=>a*60+b);
+        
+        if (curStartMin > prevEndMin) {
+          const gap = curStartMin - prevEndMin;
+          const label = gap >= 35 ? "Lunch Break" : "Short Break";
+          periods.push({ type: "break", label, start: prev.end, end: cp.start });
+        }
+      }
+      
+      periods.push({ type: "period", label: `Period ${cp.num}`, num: cp.num, start: cp.start, end: cp.end });
+    }
+    return periods;
+  }
+
+  // Fallback to auto-calculated periods
   const periods = [];
-  const [sh, sm] = institute.startTime.split(":").map(Number);
+  const [sh, sm] = (institute?.startTime || "08:00").split(":").map(Number);
   let current = sh * 60 + sm;
   let periodNum = 1;
-  for (let i = 0; i < institute.periodsPerDay; i++) {
-    const end = current + parseInt(institute.periodDuration);
+  const normal = parseInt(institute?.periodsPerDay) || 8;
+  const sat = institute?.workingDays === 6 ? (parseInt(institute?.saturdayPeriodsCount) ?? 6) : 0;
+  const maxPeriods = Math.max(normal, sat);
+
+  for (let i = 0; i < maxPeriods; i++) {
+    const end = current + (parseInt(institute?.periodDuration) || 45);
     const toTime = m => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
     const startStr = toTime(current);
     const endStr = toTime(end);
-    const breakMin = institute.breakStart.split(":").map(Number).reduce((a,b)=>a*60+b);
-    const lunchMin = institute.lunchStart.split(":").map(Number).reduce((a,b)=>a*60+b);
+    const breakMin = (institute?.breakStart || "10:30").split(":").map(Number).reduce((a,b)=>a*60+b);
+    const lunchMin = (institute?.lunchStart || "13:00").split(":").map(Number).reduce((a,b)=>a*60+b);
     if (current === breakMin) {
-      periods.push({ type:"break", label:"Short Break", start:startStr, end:institute.breakEnd });
-      current = institute.breakEnd.split(":").map(Number).reduce((a,b)=>a*60+b);
+      periods.push({ type:"break", label:"Short Break", start:startStr, end:institute.breakEnd || "10:45" });
+      current = (institute.breakEnd || "10:45").split(":").map(Number).reduce((a,b)=>a*60+b);
       i--; continue;
     }
     if (current === lunchMin) {
-      periods.push({ type:"break", label:"Lunch Break", start:startStr, end:institute.lunchEnd });
-      current = institute.lunchEnd.split(":").map(Number).reduce((a,b)=>a*60+b);
+      periods.push({ type:"break", label:"Lunch Break", start:startStr, end:institute.lunchEnd || "13:45" });
+      current = (institute.lunchEnd || "13:45").split(":").map(Number).reduce((a,b)=>a*60+b);
       i--; continue;
     }
     periods.push({ type:"period", label:`Period ${periodNum}`, num:periodNum, start:startStr, end:endStr });
@@ -38,6 +68,16 @@ export function computePeriods(institute) {
     current = end;
   }
   return periods;
+}
+
+export function getPeriodsCountForDay(institute, day) {
+  if (institute?.periodsPerDayMap && institute.periodsPerDayMap[day] !== undefined) {
+    return parseInt(institute.periodsPerDayMap[day]);
+  }
+  if (day === "Saturday" && institute?.workingDays === 6 && institute?.saturdayPeriodsCount !== undefined) {
+    return parseInt(institute.saturdayPeriodsCount);
+  }
+  return parseInt(institute?.periodsPerDay) || 8;
 }
 
 // Check if a teacher can teach a subject for a given standard/section (new assignment model)
@@ -80,7 +120,10 @@ export function generateTimetable(institute, standards, subjects, teachers, room
       timetable[key] = {};
       days.forEach(d => {
         timetable[key][d] = {};
-        periods.forEach(p => { timetable[key][d][p.num] = null; });
+        const dayPeriodsLimit = getPeriodsCountForDay(institute, d);
+        periods.filter(p => p.num <= dayPeriodsLimit).forEach(p => {
+          timetable[key][d][p.num] = null;
+        });
       });
 
       // Build period slot queue from periodsPerWeek
@@ -118,6 +161,10 @@ export function generateTimetable(institute, standards, subjects, teachers, room
 
             if (targetPeriodNum === "none" || targetPeriodNum === null) return;
 
+            // Check if this period exists on this day
+            const dayPeriodsLimit = getPeriodsCountForDay(institute, d);
+            if (targetPeriodNum > dayPeriodsLimit) return;
+
             const targetPeriod = periods.find(p => p.num === targetPeriodNum);
             if (!targetPeriod) return;
 
@@ -151,7 +198,10 @@ export function generateTimetable(institute, standards, subjects, teachers, room
       }
 
       const order = [];
-      days.forEach(d => periods.forEach(p => order.push({ d, p })));
+      days.forEach(d => {
+        const dayPeriodsLimit = getPeriodsCountForDay(institute, d);
+        periods.filter(p => p.num <= dayPeriodsLimit).forEach(p => order.push({ d, p }));
+      });
       order.sort(() => Math.random() - 0.5);
 
       // Helper to count periods of a subject on a day
